@@ -7,7 +7,6 @@ using MeerkeuzevragenBL.Exceptions;
 
 namespace MeerkeuzevragenBL.Model {
     public class Toets {
-        {
         public int Id { get; set; }
         public DateTime AanmaakDatum { get; set; }
         public Onderwerp Onderwerp { get; set; }

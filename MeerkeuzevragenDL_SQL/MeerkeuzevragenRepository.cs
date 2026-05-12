@@ -64,7 +64,7 @@ namespace MeerkeuzevragenDL_SQL {
                 SqlTransaction transaction = conn.BeginTransaction();
 
                 try {
-                    string sqlVraag = @"INSERT INTO Vragen (VraagTekst, Moeilijkheid, IsActief, OnderwerpId) 
+                    string sqlVraag = @"INSERT INTO Vraag (VraagTekst, Moeilijkheidsgraad, IsActief, OnderwerpId) 
                                         OUTPUT INSERTED.ID 
                                         VALUES (@vraagTekst, @moeilijkheid, @isActief, @onderwerpId)";
 
@@ -78,7 +78,7 @@ namespace MeerkeuzevragenDL_SQL {
                         vraag.Id = nieuweVraagId;
                     }
 
-                    string sqlAntwoord = @"INSERT INTO Antwoorden (VraagId, AntwoordTekst, IsCorrect) 
+                    string sqlAntwoord = @"INSERT INTO Antwoord (VraagId, Tekst, IsCorrect) 
                                            VALUES (@vraagId, @antwoordTekst, @isCorrect)";
 
                     using (SqlCommand cmdAntwoord = new SqlCommand(sqlAntwoord, conn, transaction)) {
@@ -101,6 +101,55 @@ namespace MeerkeuzevragenDL_SQL {
                     transaction.Rollback();
 
                     throw new Exception("Fout bij het wegschrijven van de vraag en antwoorden naar de database.", ex);
+                }
+            }
+        }
+
+        public void WisAlleData() {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                conn.Open();
+
+                // Let op de volgorde! Eerst de afhankelijke tabellen, dan pas de basistabellen.
+                // DBCC CHECKIDENT zet de teller voor de auto-increment (ID) weer mooi op 0.
+                string sql = @"
+            DELETE FROM Resultaat;
+            DELETE FROM ToetsVraag;
+            DELETE FROM Toets;
+            DELETE FROM Antwoord;
+            DELETE FROM Vraag;
+            DELETE FROM Gebruiker;
+            DELETE FROM Klas;
+            DELETE FROM Onderwerp;
+
+            DBCC CHECKIDENT ('Resultaat', RESEED, 0);
+            DBCC CHECKIDENT ('Toets', RESEED, 0);
+            DBCC CHECKIDENT ('Antwoord', RESEED, 0);
+            DBCC CHECKIDENT ('Vraag', RESEED, 0);
+            DBCC CHECKIDENT ('Gebruiker', RESEED, 0);
+            DBCC CHECKIDENT ('Klas', RESEED, 0);
+            DBCC CHECKIDENT ('Onderwerp', RESEED, 0);
+        ";
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void VoegOnderwerpToe(Onderwerp onderwerp) {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                conn.Open();
+                // We slaan de naam op en vragen meteen de nieuwe ID terug
+                string sql = @"INSERT INTO Onderwerp (Naam) 
+                       OUTPUT INSERTED.ID 
+                       VALUES (@naam)";
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@naam", onderwerp.Naam);
+
+                    // Haal de nieuwe ID op en wijs hem toe aan je object!
+                    int nieuwId = (int)cmd.ExecuteScalar();
+                    onderwerp.Id = nieuwId;
                 }
             }
         }

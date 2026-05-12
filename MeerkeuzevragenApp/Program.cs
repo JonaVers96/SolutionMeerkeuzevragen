@@ -10,26 +10,23 @@ namespace ConsoleTester {
             Console.WriteLine("--- START TEST OMGEVING (ZONDER CONFIG BUILDER) ---");
 
             try {
-                // 1. Hardcode je connectiestring direct in de code
-                // VERGEET NIET: Pas JOUW_SERVER_NAAM aan naar de juiste server!
-                string connString = "Server=JOUW_SERVER_NAAM;Database=MeerkeuzevragenDB;Trusted_Connection=True;TrustServerCertificate=True;";
+                string connString = "Data Source=JUSTME;Initial Catalog=MeerkeuzevragenDB;Integrated Security=True;Encrypt=True;Trust Server Certificate=True";
                 Console.WriteLine("Connectiestring ingesteld.");
 
-                // 2. Manager aanmaken via jouw Factory
                 Console.WriteLine("\nManager aanmaken via Factory...");
                 MeerkeuzevragenManager manager = ManagerFactory.CreateManager(connString);
                 Console.WriteLine("Manager succesvol aangemaakt!");
 
-                // 3. Test de functionaliteit: Importeer Geo2.txt
+                Console.WriteLine("\nDatabase leegmaken voor een schone test...");
+                manager.WisAlleData();
+                Console.WriteLine("Database is weer helemaal leeg!");
+
                 Console.WriteLine("\nTest 1: Bestand inlezen en naar database schrijven...");
 
-                Onderwerp testOnderwerp = new Onderwerp("Aardrijkskunde");
 
-                // VERGEET NIET: Pas dit pad aan naar waar jouw Geo2.txt staat!
-                string padNaarBestand = @"C:\Temp\Geo2.txt";
+                string padNaarMap = @"C:\data\meerkeuzevragen";
                  
-                // Roep de manager aan
-                manager.ImporteerVragenUitBestand(padNaarBestand, testOnderwerp, Moeilijkheid.Gemiddeld);
+                manager.ImporteerVragenUitMap(padNaarMap, Moeilijkheid.Gemiddeld);
 
                 Console.WriteLine("\nSUCCES! De test is geslaagd. De vragen zitten in de database.");
             }

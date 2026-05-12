@@ -6,10 +6,8 @@ using MeerkeuzevragenBL.Exceptions;
 using MeerkeuzevragenBL.Interfaces;
 using MeerkeuzevragenBL.Model;
 
-namespace MeerkeuzevragenDL_File
-{
-    public class MeerkeuzevragenFileProcessor : IMeerkeuzevragenFileProcessor
-    {
+namespace MeerkeuzevragenDL_File {
+    public class MeerkeuzevragenFileProcessor : IMeerkeuzevragenFileProcessor {
         public List<Vraag> LeesVragenBestand(string bestandsPad, Onderwerp onderwerp, Moeilijkheid standaardMoeilijkheid) {
             if (!File.Exists(bestandsPad))
                 throw new FileNotFoundException("Het opgegeven tekstbestand kon niet gevonden worden.", bestandsPad);
@@ -35,26 +33,44 @@ namespace MeerkeuzevragenDL_File
                 }
 
                 if (!leesAntwoordenSleutel) {
-                    // 1. Check of het een VRAAG is (begint met een cijfer gevolgd door een punt)
-                    if (char.IsDigit(getrimdeLijn[0]) && getrimdeLijn.Contains(".")) {
-                        int puntIndex = getrimdeLijn.IndexOf('.');
+
+                    // Bepaal of de huidige lijn een nieuwe vraag of een antwoord is
+                    int puntIndex = getrimdeLijn.IndexOf('.');
+                    bool isVraag = puntIndex > 0 && int.TryParse(getrimdeLijn.Substring(0, puntIndex), out _);
+                    bool isAntwoord = getrimdeLijn.Length > 2 && getrimdeLijn[1] == '.' && (getrimdeLijn[0] >= 'A' && getrimdeLijn[0] <= 'D');
+
+                    // 1. Het is de start van een NIEUWE VRAAG
+                    if (isVraag) {
                         string vraagTekst = getrimdeLijn.Substring(puntIndex + 1).Trim();
+
+                        // Oplossing voor de "Vraagtekst is verplicht" fout (als de tekst op de volgende lijn staat)
+                        if (string.IsNullOrWhiteSpace(vraagTekst)) {
+                            vraagTekst = "[WACHT OP TEKST]";
+                        }
 
                         huidigeVraag = new Vraag(vraagTekst, standaardMoeilijkheid, onderwerp);
                         geparsteVragen.Add(huidigeVraag);
                     }
-                    // 2. Check of het een ANTWOORD is (begint met A., B., C. of D.)
-                    else if (huidigeVraag != null && getrimdeLijn.Length > 2 && getrimdeLijn[1] == '.' &&
-                            (getrimdeLijn[0] >= 'A' && getrimdeLijn[0] <= 'D')) {
+                    // 2. Het is een ANTWOORD
+                    else if (isAntwoord && huidigeVraag != null) {
                         string antwoordTekst = getrimdeLijn.Substring(2).Trim();
-
-                        // We zetten IsCorrect voorlopig op false. Dit corrigeren we straks via de sleutel.
                         Antwoord nieuwAntwoord = new Antwoord(antwoordTekst, false);
                         huidigeVraag.VoegAntwoordToe(nieuwAntwoord);
                     }
+                    // 3. Het is MEERDERE LIJNEN TEKST voor de vraag
+                    else if (huidigeVraag != null && huidigeVraag.Antwoorden.Count == 0) {
+                        // Als we géén antwoorden hebben, behoort deze lijn nog steeds toe aan de vraag!
+
+                        if (huidigeVraag.VraagTekst == "[WACHT OP TEKST]") {
+                            // Vervang de tijdelijke tekst
+                            huidigeVraag.VraagTekst = getrimdeLijn;
+                        } else {
+                            // Voeg de extra lijn tekst toe met een Enter (NewLine)
+                            huidigeVraag.VraagTekst += Environment.NewLine + getrimdeLijn;
+                        }
+                    }
                 } else {
-                    // 3. We lezen de OPLOSSINGSSLEUTEL
-                    // Door elk karakter in de lijn te checken, ondersteunen we zowel "ABCACABACB" als verticale letters.
+                    // OPLOSSINGSSLEUTEL
                     foreach (char c in getrimdeLijn.ToUpper()) {
                         if (c >= 'A' && c <= 'D') {
                             correcteLetters.Add(c);
@@ -63,15 +79,13 @@ namespace MeerkeuzevragenDL_File
                 }
             }
 
-            // 4. Koppel de oplossingssleutel aan de vragen
+            // Koppel de oplossingssleutel aan de vragen
             if (geparsteVragen.Count != correcteLetters.Count) {
-                throw new Exception($"Parsingsfout: Aantal vragen ({geparsteVragen.Count}) komt niet overeen met het aantal antwoorden in de sleutel ({correcteLetters.Count}).");
+                throw new Exception($"Parsingsfout in {Path.GetFileName(bestandsPad)}: Aantal vragen ({geparsteVragen.Count}) komt niet overeen met het aantal antwoorden in de sleutel ({correcteLetters.Count}).");
             }
 
             for (int i = 0; i < geparsteVragen.Count; i++) {
                 char correcteLetter = correcteLetters[i];
-
-                // Converteer letter 'A' naar index 0, 'B' naar 1, etc.
                 int correcteIndex = correcteLetter - 'A';
 
                 if (correcteIndex >= 0 && correcteIndex < geparsteVragen[i].Antwoorden.Count) {
