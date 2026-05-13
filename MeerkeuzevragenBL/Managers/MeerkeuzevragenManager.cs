@@ -17,6 +17,8 @@ namespace MeerkeuzevragenBL.Managers {
         private IMeerkeuzevragenRepository _repository;
         private Gebruiker _ingelogdeGebruiker;
 
+        public Gebruiker IngelogdeGebruiker { get; private set; }
+
         public MeerkeuzevragenManager(IMeerkeuzevragenFileProcessor fileProcessor, IMeerkeuzevragenRepository repository) {
             _fileProcessor = fileProcessor;
             _repository = repository;
@@ -68,8 +70,10 @@ namespace MeerkeuzevragenBL.Managers {
 
 
         public void VoegVraagToe(Vraag nieuweVraag) {
-            if (!(_ingelogdeGebruiker is Leerkracht))
-                throw new ManagerException("Enkel een leerkracht mag vragen toevoegen.");
+            //if (!(_ingelogdeGebruiker is Leerkracht))
+            //    throw new ManagerException("Enkel een leerkracht mag vragen toevoegen.");
+            _repository.VoegVraagToe(nieuweVraag);
+
 
         }
 
@@ -97,6 +101,61 @@ namespace MeerkeuzevragenBL.Managers {
             }
             catch (Exception ex) {
                 throw new ManagerException($"Fout bij het aanmaken van onderwerp: {ex.Message}", ex);
+            }
+        }
+
+        public List<Onderwerp> HaalAlleOnderwerpenOp() {
+            try {
+                return _repository.HaalAlleOnderwerpenOp();
+            }
+            catch (Exception ex) {
+                throw new ManagerException($"Fout bij ophalen van onderwerpen: {ex.Message}", ex);
+            }
+        }
+
+        public List<Vraag> HaalVragenOpPerOnderwerp(Onderwerp onderwerp) {
+            return _repository.HaalVragenOpPerOnderwerp(onderwerp.Id);
+        }
+
+        public void UpdateVraagActiefStaat(Vraag vraag) {
+            _repository.UpdateVraagActiefStaat(vraag.Id, vraag.IsActief);
+        }
+
+        public Toets GenereerToets(Onderwerp onderwerp, int aantalVragen) {
+            try {
+                List<Vraag> randomVragen = _repository.HaalWillekeurigeVolledigeVragenOp(onderwerp.Id, aantalVragen);
+
+                if (randomVragen.Count == 0) {
+                    throw new ManagerException("Er zijn geen actieve vragen gevonden voor dit onderwerp.");
+                }
+
+                Toets nieuweToets = new Toets(onderwerp);
+
+                foreach (Vraag v in randomVragen) {
+                    v.Onderwerp = onderwerp;
+                    nieuweToets.VoegVraagToe(v);
+                }
+
+                return nieuweToets;
+            }
+            catch (Exception ex) {
+                throw new ManagerException($"Fout bij het genereren van de test: {ex.Message}", ex);
+            }
+        }
+
+        public bool Login(string naam) {
+            Gebruiker g = _repository.ZoekGebruiker(naam);
+            if (g != null) {
+                IngelogdeGebruiker = g;
+                return true;
+            }
+            return false;
+        }
+
+        public void BewaarResultaat(Toets toets, int score) {
+            if (IngelogdeGebruiker is Leerling leerling) {
+                Resultaat res = new Resultaat(toets, leerling, ""); // Antwoorden-string optioneel
+                _repository.BewaarResultaat(res);
             }
         }
     }

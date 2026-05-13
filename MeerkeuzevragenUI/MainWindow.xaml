@@ -7,6 +7,49 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
+        <StackPanel Grid.Column="0" Background="#F0F0F0" Margin="10">
+            <TextBlock Text="Vragen Beheren" FontWeight="Bold" FontSize="18" Margin="0,0,0,20"/>
+
+            <TextBlock Text="Kies een onderwerp:" Margin="0,0,0,5" />
+
+            <ComboBox x:Name="cmbOnderwerpen" 
+                  DisplayMemberPath="Naam" 
+                  Margin="0,0,0,20" 
+                  SelectionChanged="cmbOnderwerpen_SelectionChanged" />
+
+            <Button Content="Nieuwe Vraag Toevoegen" Visibility="Collapsed" Height="30" Margin="0,0,0,10" Click="ButtonNieuweVraag_Click"/>
+            <Button Content="Test Genereren" Height="30" Margin="0,0,0,10" Click="ButtonTestGenereren_Click"/>
+        </StackPanel>
+
+        <Grid Grid.Column="1" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="txtGekozenOnderwerp" Text="Selecteer een onderwerp..." FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+
+            <DataGrid x:Name="dgVragen" Visibility="Collapsed" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" AlternatingRowBackground="#F9F9F9">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Vraag" Binding="{Binding VraagTekst}" Width="*" IsReadOnly="True" />
+                    <DataGridTextColumn Header="Moeilijkheid" Binding="{Binding Moeilijkheidsgraad}" Width="100" IsReadOnly="True" />
+
+                    <DataGridTemplateColumn Header="Actief" Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsActief, UpdateSourceTrigger=PropertyChanged}" 
+                                      Click="ActiefCheckBox_Click"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Window>

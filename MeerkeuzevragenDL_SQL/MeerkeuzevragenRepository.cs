@@ -1,4 +1,5 @@
 using System.Data;
+using MeerkeuzevragenBL.Enum;
 using MeerkeuzevragenBL.Exceptions;
 using MeerkeuzevragenBL.Gebruikers;
 using MeerkeuzevragenBL.Interfaces;
@@ -150,6 +151,148 @@ namespace MeerkeuzevragenDL_SQL {
                     // Haal de nieuwe ID op en wijs hem toe aan je object!
                     int nieuwId = (int)cmd.ExecuteScalar();
                     onderwerp.Id = nieuwId;
+                }
+            }
+        }
+
+        public List<Onderwerp> HaalAlleOnderwerpenOp() {
+            List<Onderwerp> onderwerpen = new List<Onderwerp>();
+
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                string sql = "SELECT Id, Naam FROM Onderwerp ORDER BY Naam";
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader()) {
+                        while (reader.Read()) {
+                            int id = (int)reader["Id"];
+                            string naam = (string)reader["Naam"];
+
+                            onderwerpen.Add(new Onderwerp(id, naam));
+                        }
+                    }
+                }
+            }
+            return onderwerpen;
+        }
+
+        public List<Vraag> HaalVragenOpPerOnderwerp(int onderwerpId) {
+            List<Vraag> vragenlijst = new List<Vraag>();
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                // We halen de basisgegevens op die we in de lijst willen tonen
+                string sql = "SELECT Id, VraagTekst, Moeilijkheidsgraad, IsActief FROM Vraag WHERE OnderwerpId = @onderwerpId";
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@onderwerpId", onderwerpId);
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader()) {
+                        while (reader.Read()) {
+                            int id = (int)reader["Id"];
+                            string tekst = (string)reader["VraagTekst"];
+                            Moeilijkheid moeilijkheid = (Moeilijkheid)(int)reader["Moeilijkheidsgraad"];
+                            bool isActief = (bool)reader["IsActief"];
+
+                            // We maken de vraag aan (Onderwerp mag hier even null zijn, we hebben enkel de tekst en status nodig voor de UI)
+                            Vraag v = new Vraag(id, tekst, moeilijkheid, null, isActief);
+                            vragenlijst.Add(v);
+                        }
+                    }
+                }
+            }
+            return vragenlijst;
+        }
+
+        public void UpdateVraagActiefStaat(int vraagId, bool isActief) {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                string sql = "UPDATE Vraag SET IsActief = @isActief WHERE Id = @vraagId";
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@isActief", isActief);
+                    cmd.Parameters.AddWithValue("@vraagId", vraagId);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public List<Vraag> HaalWillekeurigeVolledigeVragenOp(int onderwerpId, int aantalVragen) {
+            List<Vraag> vragenlijst = new List<Vraag>();
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                conn.Open();
+
+                string sqlVragen = @"
+            SELECT TOP (@aantal) Id, VraagTekst, Moeilijkheidsgraad 
+            FROM Vraag 
+            WHERE OnderwerpId = @onderwerpId AND IsActief = 1 
+            ORDER BY NEWID()";
+
+                using (SqlCommand cmdVraag = new SqlCommand(sqlVragen, conn)) {
+                    cmdVraag.Parameters.AddWithValue("@aantal", aantalVragen);
+                    cmdVraag.Parameters.AddWithValue("@onderwerpId", onderwerpId);
+
+                    using (SqlDataReader reader = cmdVraag.ExecuteReader()) {
+                        while (reader.Read()) {
+                            int id = (int)reader["Id"];
+                            string tekst = (string)reader["VraagTekst"];
+                            Moeilijkheid moeilijkheid = (Moeilijkheid)(int)reader["Moeilijkheidsgraad"];
+
+                            vragenlijst.Add(new Vraag(id, tekst, moeilijkheid, null, true));
+                        }
+                    }
+                }
+
+                foreach (Vraag v in vragenlijst) {
+                    string sqlAntwoorden = "SELECT Id, Tekst, IsCorrect FROM Antwoord WHERE VraagId = @vraagId";
+                    using (SqlCommand cmdAntwoord = new SqlCommand(sqlAntwoorden, conn)) {
+                        cmdAntwoord.Parameters.AddWithValue("@vraagId", v.Id);
+                        using (SqlDataReader readerA = cmdAntwoord.ExecuteReader()) {
+                            while (readerA.Read()) {
+                                int aId = (int)readerA["Id"];
+                                string aTekst = (string)readerA["Tekst"];
+                                bool isCorrect = (bool)readerA["IsCorrect"];
+
+                                v.VoegAntwoordToe(new Antwoord(aId, aTekst, isCorrect));
+                            }
+                        }
+                    }
+                }
+            }
+            return vragenlijst;
+        }
+        public Gebruiker ZoekGebruiker(string naam) {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                // We zoeken de gebruiker op naam en kijken naar de kolom 'Rol'
+                string sql = "SELECT Id, Naam, Rol FROM Gebruiker WHERE Naam = @naam";
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@naam", naam);
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader()) {
+                        if (reader.Read()) {
+                            int id = (int)reader["Id"];
+                            string n = (string)reader["Naam"];
+                            string rol = (string)reader["Rol"];
+
+                            if (rol.Equals("Leerkracht", StringComparison.OrdinalIgnoreCase))
+                                return new Leerkracht(id, n);
+                            else
+                                return new Leerling(id, n, null); // Klas laten we even voor wat het is
+                        }
+                    }
+                }
+            }
+            return null; // Gebruiker niet gevonden
+        }
+
+        public void BewaarResultaat(Resultaat resultaat) {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                string sql = @"INSERT INTO Resultaat (ToetsId, GebruikerId, Score, MaxScore, IngeleverdeAntwoorden) 
+                       VALUES (@toetsId, @gebruikerId, @score, @maxScore, @antwoorden)";
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@toetsId", resultaat.AfgelegdeToets.Id);
+                    cmd.Parameters.AddWithValue("@gebruikerId", resultaat.Eigenaar.Id);
+                    cmd.Parameters.AddWithValue("@score", resultaat.Score);
+                    cmd.Parameters.AddWithValue("@maxScore", resultaat.MaxScore);
+                    cmd.Parameters.AddWithValue("@antwoorden", resultaat.IngeleverdeAntwoorden ?? "");
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
                 }
             }
         }
