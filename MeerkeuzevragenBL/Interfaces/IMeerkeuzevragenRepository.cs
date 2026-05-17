@@ -14,5 +14,6 @@ namespace MeerkeuzevragenBL.Interfaces
         List<Vraag> HaalWillekeurigeVolledigeVragenOp(int onderwerpId, int aantalVragen);
         Gebruiker ZoekGebruiker(string naam);
         void BewaarResultaat(Resultaat resultaat);
+        void VoegToetsToe(Toets toets);
     }
 }

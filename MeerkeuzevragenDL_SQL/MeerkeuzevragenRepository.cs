@@ -17,7 +17,7 @@ namespace MeerkeuzevragenDL_SQL {
             List<Resultaat> resultatenLijst = new List<Resultaat>();
 
             string sql = @"
-        SELECT r.Id AS ResultaatId, r.IngeleverdeAntwoorden, r.Score,
+        SELECT r.Id AS ResultaatId, r.IngeleverdeAntwoorden, r.Score, r.MaxScore,
                l.Id AS LeerlingId, l.Naam AS LeerlingNaam,
                t.Id AS ToetsId, o.Naam AS OnderwerpNaam
         FROM Resultaat r
@@ -33,8 +33,9 @@ namespace MeerkeuzevragenDL_SQL {
                     using (SqlDataReader reader = cmd.ExecuteReader()) {
                         while (reader.Read()) {
                             int resultaatId = (int)reader["ResultaatId"];
-                            string antwoorden = (string)reader["IngeleverdeAntwoorden"];
+                            string antwoorden = reader["IngeleverdeAntwoorden"] == DBNull.Value ? "" : (string)reader["IngeleverdeAntwoorden"];
                             int score = (int)reader["Score"];
+                            int maxScore = (int)reader["maxScore"];
 
                             int leerlingId = (int)reader["LeerlingId"];
                             string leerlingNaam = (string)reader["LeerlingNaam"];
@@ -47,7 +48,7 @@ namespace MeerkeuzevragenDL_SQL {
 
                             Leerling objLeerling = new Leerling(leerlingId, leerlingNaam, null);
 
-                            Resultaat nieuwResultaat = new Resultaat(resultaatId, objToets, objLeerling, antwoorden, score);
+                            Resultaat nieuwResultaat = new Resultaat(resultaatId, objToets, objLeerling, antwoorden, score, maxScore);
 
                             resultatenLijst.Add(nieuwResultaat);
                         }
@@ -293,6 +294,24 @@ namespace MeerkeuzevragenDL_SQL {
                     cmd.Parameters.AddWithValue("@antwoorden", resultaat.IngeleverdeAntwoorden ?? "");
                     conn.Open();
                     cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void VoegToetsToe(Toets toets) {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                conn.Open();
+
+                string sql = @"INSERT INTO Toets (OnderwerpId, AanmaakDatum) 
+                       OUTPUT INSERTED.ID 
+                       VALUES (@onderwerpId, @datum)";
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    cmd.Parameters.AddWithValue("@onderwerpId", toets.Onderwerp.Id);
+                    cmd.Parameters.AddWithValue("@datum", toets.AanmaakDatum);
+
+                    int nieuwId = (int)cmd.ExecuteScalar();
+                    toets.Id = nieuwId;
                 }
             }
         }

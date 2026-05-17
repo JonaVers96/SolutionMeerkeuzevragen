@@ -70,17 +70,17 @@ namespace MeerkeuzevragenBL.Managers {
 
 
         public void VoegVraagToe(Vraag nieuweVraag) {
-            //if (!(_ingelogdeGebruiker is Leerkracht))
-            //    throw new ManagerException("Enkel een leerkracht mag vragen toevoegen.");
             _repository.VoegVraagToe(nieuweVraag);
 
 
         }
 
         public List<Resultaat> HaalMijnResultatenOp() {
-            if (_ingelogdeGebruiker is Leerling leerling) {
-                return leerling.Resultaten; 
-            } else if (_ingelogdeGebruiker is Leerkracht) {
+            if (IngelogdeGebruiker is Leerling leerling) {
+                return _repository.HaalAlleResultatenOp()
+                                          .Where(r => r.Eigenaar.Id == leerling.Id)
+                                          .ToList();
+            } else if (IngelogdeGebruiker is Leerkracht) {
                 return _repository.HaalAlleResultatenOp();
             }
             throw new ManagerException("Ongeldige gebruiker.");
@@ -154,7 +154,10 @@ namespace MeerkeuzevragenBL.Managers {
 
         public void BewaarResultaat(Toets toets, int score) {
             if (IngelogdeGebruiker is Leerling leerling) {
-                Resultaat res = new Resultaat(toets, leerling, ""); // Antwoorden-string optioneel
+                if (toets.Id == 0) {
+                    _repository.VoegToetsToe(toets);
+                }
+                Resultaat res = new Resultaat(toets, leerling, ""); 
                 _repository.BewaarResultaat(res);
             }
         }

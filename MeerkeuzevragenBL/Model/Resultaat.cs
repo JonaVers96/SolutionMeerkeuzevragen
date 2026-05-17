@@ -25,10 +25,11 @@ namespace MeerkeuzevragenBL.Model {
             BerekenScore();
         }
 
-        public Resultaat(int id, Toets toets, Leerling eigenaar, string ingeleverdeAntwoorden, int score)
+        public Resultaat(int id, Toets toets, Leerling eigenaar, string ingeleverdeAntwoorden, int score, int maxScore)
             : this(toets, eigenaar, ingeleverdeAntwoorden) {
             Id = id;
             Score = score;
+            MaxScore = maxScore;
         }
 
         private void BerekenScore() {

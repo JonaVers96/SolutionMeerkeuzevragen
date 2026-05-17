@@ -14,6 +14,7 @@
 
         <StackPanel Grid.Column="0" Background="#F0F0F0" Margin="10">
             <TextBlock Text="Vragen Beheren" FontWeight="Bold" FontSize="18" Margin="0,0,0,20"/>
+            
 
             <TextBlock Text="Kies een onderwerp:" Margin="0,0,0,5" />
 
@@ -22,8 +23,9 @@
                   Margin="0,0,0,20" 
                   SelectionChanged="cmbOnderwerpen_SelectionChanged" />
 
-            <Button Content="Nieuwe Vraag Toevoegen" Visibility="Collapsed" Height="30" Margin="0,0,0,10" Click="ButtonNieuweVraag_Click"/>
-            <Button Content="Test Genereren" Height="30" Margin="0,0,0,10" Click="ButtonTestGenereren_Click"/>
+            <Button x:Name="buttonNieuweVraag" Content="Nieuwe Vraag Toevoegen" Visibility="Collapsed" Height="30" Margin="0,0,0,10" Click="ButtonNieuweVraag_Click"/>
+            <Button x:Name="buttonTestGenereren" Content="Test Genereren" Height="30" Margin="0,0,0,10" Click="ButtonTestGenereren_Click"/>
+            <Button x:Name="buttonResultaten" Content="Resultaten Bekijken" Height="30" Margin="0,0,0,10" Click="buttonResultaten_Click"/>
         </StackPanel>
 
         <Grid Grid.Column="1" Margin="10">
@@ -33,6 +35,7 @@
             </Grid.RowDefinitions>
 
             <TextBlock x:Name="txtGekozenOnderwerp" Text="Selecteer een onderwerp..." FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+            <Button Content="Afmelden" Click="ButtonAfmelden_Click" HorizontalAlignment="Right" Width="100" Background="#e74c3c" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="5"/>
 
             <DataGrid x:Name="dgVragen" Visibility="Collapsed" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" AlternatingRowBackground="#F9F9F9">
                 <DataGrid.Columns>
