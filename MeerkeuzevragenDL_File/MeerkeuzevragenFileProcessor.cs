@@ -97,5 +97,35 @@ namespace MeerkeuzevragenDL_File {
 
             return geparsteVragen;
         }
+
+        public void SchrijfToetsNaarBestand(Toets toets, string bestandsPad) {
+            List<string> lijnen = new List<string>();
+
+            lijnen.Add($"Raad de artiest – {toets.Onderwerp.Naam} ({toets.Vragen.Count} vragen)");
+            lijnen.Add(""); // Lege regel
+
+            List<char> correcteLettersSleutel = new List<char>();
+
+            for (int i = 0; i < toets.Vragen.Count; i++) {
+                Vraag vraag = toets.Vragen[i];
+
+                lijnen.Add($"{i + 1}. {vraag.VraagTekst}");
+                lijnen.Add(""); // Witregel onder de vraag zoals in je voorbeeld
+
+                for (int j = 0; j < vraag.Antwoorden.Count; j++) {
+                    Antwoord antwoord = vraag.Antwoorden[j];
+                    char letter = (char)('A' + j); // Verander index 0 naar 'A', 1 naar 'B', etc.
+
+                    lijnen.Add($"{letter}. {antwoord.Tekst}");
+
+                    if (antwoord.IsCorrect) {
+                        correcteLettersSleutel.Add(letter);
+                    }
+                }
+                lijnen.Add(""); // Witregel tussen de vragen
+            }
+
+            File.WriteAllLines(bestandsPad, lijnen);
+        }
     }
 }

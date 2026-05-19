@@ -39,6 +39,8 @@ namespace MeerkeuzevragenUI {
             } else if (_manager.IngelogdeGebruiker is Leerkracht leerkracht) {
                 buttonNieuweVraag.Visibility = Visibility.Visible;
                 dgVragen.Visibility = Visibility.Visible;
+                buttonImporteerMap.Visibility = Visibility.Visible;
+                buttonVerwijderOnderwerp.Visibility = Visibility.Visible;
             }
         }
 
@@ -61,7 +63,7 @@ namespace MeerkeuzevragenUI {
                     dgVragen.ItemsSource = _manager.HaalVragenOpPerOnderwerp(geselecteerdOnderwerp);
                 }
             }
-            catch (Exception ex) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+            catch (Exception ex) {
                 MessageBox.Show($"Fout bij ophalen vragen: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -115,5 +117,59 @@ namespace MeerkeuzevragenUI {
             venster.Owner = this;
             venster.ShowDialog();
         }
+
+        private void buttonImporteerMap_Click(object sender, RoutedEventArgs e) {
+            try {
+                Microsoft.Win32.OpenFolderDialog dialog = new Microsoft.Win32.OpenFolderDialog();
+                dialog.Title = "Selecteer de map met tekstbestanden";
+
+                if (dialog.ShowDialog() == true) {
+                    string gekozenMapPad = dialog.FolderName;
+
+                    _manager.ImporteerVragenUitMap(gekozenMapPad, MeerkeuzevragenBL.Enum.Moeilijkheid.Gemiddeld);
+
+                    MessageBox.Show("Alle bestanden in de map zijn succesvol geïmporteerd en opgeslagen in de databank!", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    LaadOnderwerpen();
+                }
+            }
+            catch (Exception ex) {
+                MessageBox.Show($"Fout bij het importeren van de map: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void ButtonVerwijderOnderwerp_Click(object sender, RoutedEventArgs e) {
+            // 1. Controleer of er een onderwerp is gekozen
+            if (cmbOnderwerpen.SelectedItem is Onderwerp geselecteerdOnderwerp) {
+
+                // 2. Vraag om bevestiging via een pop-up
+                MessageBoxResult bevestiging = MessageBox.Show(
+                    $"Weet je zeker dat je het onderwerp '{geselecteerdOnderwerp.Naam}' wilt verwijderen?\n\nHiermee worden OOK alle bijbehorende vragen, antwoorden, testen en studenten-scores definitief gewist!",
+                    "Onderwerp Verwijderen",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (bevestiging == MessageBoxResult.Yes) {
+                    try {
+                        // 3. Verwijder uit database
+                        _manager.VerwijderOnderwerp(geselecteerdOnderwerp);
+
+                        MessageBox.Show($"Het onderwerp '{geselecteerdOnderwerp.Naam}' is succesvol verwijderd.", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // 4. Maak de rechterkant van het scherm leeg
+                        dgVragen.ItemsSource = null;
+                        txtGekozenOnderwerp.Text = "Selecteer een onderwerp...";
+
+                        // 5. Herlaad de dropdown zodat het verwijderde onderwerp verdwijnt
+                        LaadOnderwerpen();
+                    }
+                    catch (Exception ex) {
+                        MessageBox.Show($"Fout bij het verwijderen: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            } else {
+                MessageBox.Show("Kies eerst een onderwerp uit de lijst links om te verwijderen.", "Opgelet", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
     }
 }

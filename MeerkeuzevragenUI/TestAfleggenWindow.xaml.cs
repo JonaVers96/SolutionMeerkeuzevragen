@@ -25,15 +25,16 @@ namespace MeerkeuzevragenUI {
     public partial class TestAfleggenWindow : Window {
         private Toets _huidigeToets;
         private List<VraagWeergave> _weergaveLijst;
+        private MeerkeuzevragenManager _manager;
 
         public TestAfleggenWindow(MeerkeuzevragenManager manager, Onderwerp onderwerp, int aantalVragen) {
             InitializeComponent();
+            _manager = manager;
 
             try {
                 _huidigeToets = manager.GenereerToets(onderwerp, aantalVragen);
                 txtTitel.Text = $"Test: {onderwerp.Naam} ({_huidigeToets.Vragen.Count} vragen)";
 
-                // 2. Vul onze wrapper-lijst in plaats van direct de vragenlijst
                 _weergaveLijst = new List<VraagWeergave>();
                 foreach (Vraag v in _huidigeToets.Vragen) {
                     _weergaveLijst.Add(new VraagWeergave { DeVraag = v });
@@ -47,48 +48,67 @@ namespace MeerkeuzevragenUI {
             }
         }
 
-        // 3. De logica voor het indienen!
         private void BtnIndienen_Click(object sender, RoutedEventArgs e) {
             int behaaldeScore = 0;
             int maxScore = _weergaveLijst.Count;
 
-            // Overloop elke vraag die op het scherm staat
             foreach (VraagWeergave item in _weergaveLijst) {
-                // Zoek het juiste antwoord op uit de lijst
                 Antwoord correctAntwoord = item.DeVraag.Antwoorden.FirstOrDefault(a => a.IsCorrect);
 
                 if (item.GekozenAntwoord == null) {
-                    // De leerling heeft niets aangevinkt
                     item.FeedbackKleur = "Red";
                     item.FeedbackTekst = $"Niet beantwoord! Het juiste antwoord was: {correctAntwoord?.Tekst}";
                 } else if (item.GekozenAntwoord.IsCorrect) {
-                    // Het antwoord is JUIST
                     behaaldeScore++;
                     item.FeedbackKleur = "Green";
                     item.FeedbackTekst = "Juist!";
                 } else {
-                    // Het antwoord is FOUT
                     item.FeedbackKleur = "Red";
                     item.FeedbackTekst = $"Fout! Je koos '{item.GekozenAntwoord.Tekst}'. Het juiste antwoord was: {correctAntwoord?.Tekst}";
                 }
             }
 
-            // 4. Update het scherm door de databinding even te verversen
             icVragen.ItemsSource = null;
             icVragen.ItemsSource = _weergaveLijst;
 
-            // Pas de titel aan met de behaalde score
             txtTitel.Text = $"Jouw Score: {behaaldeScore} / {maxScore}";
             txtTitel.Foreground = behaaldeScore >= (maxScore / 2.0) ? Brushes.Green : Brushes.Red;
 
-            // Maak de knop onklikbaar zodat ze niet nog een keer kunnen indienen
             if (sender is System.Windows.Controls.Button btn) {
                 btn.IsEnabled = false;
                 btn.Content = "Test Ingediend";
             }
 
-            // Toon een mooie pop-up
+            try {
+                _manager.BewaarResultaat(_huidigeToets, behaaldeScore);
+            }
+            catch (Exception ex) {
+                MessageBox.Show($"Score kon niet worden opgeslagen: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
             MessageBox.Show($"Test afgerond!\nJe behaalde {behaaldeScore} op {maxScore}.", "Resultaat", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnExporteer_Click(object sender, RoutedEventArgs e) {
+            try {
+
+                Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+
+                saveFileDialog.Filter = "Tekstbestanden (*.txt)|*.txt";
+
+                saveFileDialog.FileName = $"Toets_{_huidigeToets.Onderwerp.Naam}_{DateTime.Now:yyyyMMdd}";
+
+                if (saveFileDialog.ShowDialog() == true) {
+                    string gekozenPad = saveFileDialog.FileName;
+
+                    _manager.ExporteerToetsNaarBestand(_huidigeToets, gekozenPad);
+
+                    MessageBox.Show("De toets is succesvol geëxporteerd en opgeslagen!", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex) {
+                MessageBox.Show($"Fout bij het exporteren van de toets: {ex.Message}", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

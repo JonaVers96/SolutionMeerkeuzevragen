@@ -157,9 +157,44 @@ namespace MeerkeuzevragenBL.Managers {
                 if (toets.Id == 0) {
                     _repository.VoegToetsToe(toets);
                 }
-                Resultaat res = new Resultaat(toets, leerling, ""); 
+                Resultaat res = new Resultaat(0, toets, leerling, "", score, toets.Vragen.Count); 
                 _repository.BewaarResultaat(res);
             }
         }
+
+        public void WisAlleResultaten() {
+            if (IngelogdeGebruiker is Leerkracht) {
+                try {
+                    _repository.WisAlleResultaten();
+                }
+                catch (Exception ex) {
+                    throw new ManagerException($"Fout bij het wissen van de resultaten: {ex.Message}", ex);
+                }
+            } else {
+                throw new ManagerException("Toegang geweigerd. Enkel leerkrachten mogen resultaten wissen.");
+            }
+        }
+
+        public void VerwijderOnderwerp(Onderwerp onderwerp) {
+            if (IngelogdeGebruiker is Leerkracht) {
+                try {
+                    _repository.VerwijderOnderwerp(onderwerp.Id);
+                }
+                catch (Exception ex) {
+                    throw new ManagerException($"Fout bij verwijderen van onderwerp: {ex.Message}", ex);
+                }
+            } else {
+                throw new ManagerException("Toegang geweigerd. Enkel leerkrachten mogen onderwerpen verwijderen.");
+            }
+        }
+        public void ExporteerToetsNaarBestand(Toets toets, string bestandsPad) {
+            try {
+                _fileProcessor.SchrijfToetsNaarBestand(toets, bestandsPad);
+            }
+            catch (Exception ex) {
+                throw new ManagerException($"Fout bij het exporteren van de toets naar een bestand: {ex.Message}", ex);
+            }
+        }
+
     }
 }

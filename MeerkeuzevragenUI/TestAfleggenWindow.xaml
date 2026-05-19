@@ -36,7 +36,15 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <Button Grid.Row="2" Content="Test Indienen" Click="BtnIndienen_Click" Height="40" Margin="0,15,0,0" Background="#2196F3" Foreground="White" FontWeight="Bold" FontSize="16"/>
+            <Button Grid.Column="0" Content="Toets Exporteren (TXT)" Click="BtnExporteer_Click" Height="40" Margin="0,0,10,0" Background="#4CAF50" Foreground="White" FontWeight="Bold" FontSize="16"/>
+
+            <Button Grid.Column="1" Content="Test Indienen" Click="BtnIndienen_Click" Height="40" Margin="10,0,0,0" Background="#2196F3" Foreground="White" FontWeight="Bold" FontSize="16"/>
+        </Grid>
     </Grid>
 </Window>

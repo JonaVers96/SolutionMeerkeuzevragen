@@ -315,5 +315,79 @@ namespace MeerkeuzevragenDL_SQL {
                 }
             }
         }
+
+        public void WisAlleResultaten() {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                // Maak de tabel leeg en reset de teller
+                string sql = @"
+            DELETE FROM Resultaat;
+            DBCC CHECKIDENT ('Resultaat', RESEED, 0);";
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn)) {
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void VerwijderOnderwerp(int onderwerpId) {
+            using (SqlConnection conn = new SqlConnection(_connectionString)) {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction()) {
+                    try {
+                        // 1. Verwijder resultaten gekoppeld aan toetsen van dit onderwerp
+                        string sqlResultaten = @"DELETE FROM Resultaat WHERE ToetsId IN 
+                                         (SELECT Id FROM Toets WHERE OnderwerpId = @id)";
+                        using (SqlCommand cmd = new SqlCommand(sqlResultaten, conn, transaction)) {
+                            cmd.Parameters.AddWithValue("@id", onderwerpId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 2. Verwijder ToetsVragen gekoppeld aan toetsen of vragen van dit onderwerp
+                        string sqlToetsVragen = @"DELETE FROM ToetsVraag WHERE ToetsId IN (SELECT Id FROM Toets WHERE OnderwerpId = @id)
+                                          OR VraagId IN (SELECT Id FROM Vraag WHERE OnderwerpId = @id)";
+                        using (SqlCommand cmd = new SqlCommand(sqlToetsVragen, conn, transaction)) {
+                            cmd.Parameters.AddWithValue("@id", onderwerpId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 3. Verwijder Toetsen van dit onderwerp
+                        string sqlToetsen = "DELETE FROM Toets WHERE OnderwerpId = @id";
+                        using (SqlCommand cmd = new SqlCommand(sqlToetsen, conn, transaction)) {
+                            cmd.Parameters.AddWithValue("@id", onderwerpId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 4. Verwijder Antwoorden van vragen van dit onderwerp
+                        string sqlAntwoorden = @"DELETE FROM Antwoord WHERE VraagId IN 
+                                         (SELECT Id FROM Vraag WHERE OnderwerpId = @id)";
+                        using (SqlCommand cmd = new SqlCommand(sqlAntwoorden, conn, transaction)) {
+                            cmd.Parameters.AddWithValue("@id", onderwerpId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 5. Verwijder Vragen van dit onderwerp
+                        string sqlVragen = "DELETE FROM Vraag WHERE OnderwerpId = @id";
+                        using (SqlCommand cmd = new SqlCommand(sqlVragen, conn, transaction)) {
+                            cmd.Parameters.AddWithValue("@id", onderwerpId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 6. Verwijder tot slot het Onderwerp zelf
+                        string sqlOnderwerp = "DELETE FROM Onderwerp WHERE Id = @id";
+                        using (SqlCommand cmd = new SqlCommand(sqlOnderwerp, conn, transaction)) {
+                            cmd.Parameters.AddWithValue("@id", onderwerpId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex) {
+                        transaction.Rollback();
+                        throw new Exception("Fout bij het verwijderen van het onderwerp en de bijbehorende data uit de database.", ex);
+                    }
+                }
+            }
+        }
     }
 }

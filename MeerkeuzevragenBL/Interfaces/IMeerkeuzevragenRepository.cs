@@ -15,5 +15,7 @@ namespace MeerkeuzevragenBL.Interfaces
         Gebruiker ZoekGebruiker(string naam);
         void BewaarResultaat(Resultaat resultaat);
         void VoegToetsToe(Toets toets);
+        void WisAlleResultaten();
+        void VerwijderOnderwerp(int onderwerpId);
     }
 }

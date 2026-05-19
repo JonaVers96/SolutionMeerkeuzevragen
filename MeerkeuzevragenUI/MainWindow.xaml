@@ -24,8 +24,10 @@
                   SelectionChanged="cmbOnderwerpen_SelectionChanged" />
 
             <Button x:Name="buttonNieuweVraag" Content="Nieuwe Vraag Toevoegen" Visibility="Collapsed" Height="30" Margin="0,0,0,10" Click="ButtonNieuweVraag_Click"/>
+            <Button x:Name="buttonImporteerMap" Content="Vragen Importeren uit Map" Visibility="Collapsed" Height="30" Margin="0,0,0,10" Click="buttonImporteerMap_Click"/>
             <Button x:Name="buttonTestGenereren" Content="Test Genereren" Height="30" Margin="0,0,0,10" Click="ButtonTestGenereren_Click"/>
             <Button x:Name="buttonResultaten" Content="Resultaten Bekijken" Height="30" Margin="0,0,0,10" Click="buttonResultaten_Click"/>
+            <Button x:Name="buttonVerwijderOnderwerp" Content="Geselecteerd Onderwerp Verwijderen" Visibility="Collapsed" Height="30" Margin="0,0,0,10" Click="ButtonVerwijderOnderwerp_Click" />
         </StackPanel>
 
         <Grid Grid.Column="1" Margin="10">

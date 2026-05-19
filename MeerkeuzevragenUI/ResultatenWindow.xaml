@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="txtTitel" Text="Overzicht Resultaten" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
@@ -22,5 +23,9 @@
                 <DataGridTextColumn Header="Max. Score" Binding="{Binding MaxScore}" Width="100" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
+
+        <Button x:Name="btnWisResultaten" Grid.Row="2" Content="Wis Alle Resultaten" Height="35" Width="150" 
+                HorizontalAlignment="Right" Background="Red" Foreground="White" FontWeight="Bold" 
+                Visibility="Collapsed" Click="btnWisResultaten_Click"/>
     </Grid>
 </Window>
